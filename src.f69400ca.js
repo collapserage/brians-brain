@@ -32361,9 +32361,11 @@ var cellState_1 = require("./cellState");
 
 var EMPTY_LOG = {
   generation: 0,
-  fps: 0,
   cells: 0,
   repaints: 0,
+  calculationTime: 0,
+  drawingTime: 0,
+  fps: 0,
   fpsTotal: 0
 };
 exports.CELL_STATE_LENGTH = Object.keys(cellState_1.CellState).length / 2;
@@ -32385,8 +32387,8 @@ var BriansBrainGame = /*#__PURE__*/function () {
     this.logPrintDelay = logPrintDelay;
     this.gameCalculator = gameCalculator;
     this.gameRenderer = gameRenderer;
-    this.running = false;
     this.board = [];
+    this.running = false;
     this.gameLoop = 0;
     this.logOutputLoop = 0;
     this.log = _objectSpread({}, EMPTY_LOG);
@@ -32535,17 +32537,22 @@ var BriansBrainGame = /*#__PURE__*/function () {
   }, {
     key: "updateAndDraw",
     value: function updateAndDraw() {
-      var performanceTracker = performance.now();
       this.log.repaints = 0;
+      var calculationTracker = performance.now();
       this.board = this.gameCalculator.run(this.board, this.horizontalSize, this.verticalSize);
+      var drawingTracker = performance.now();
+      var calculationTime = drawingTracker - calculationTracker;
       this.log.repaints = this.gameRenderer.draw(this.board);
+      var drawingTime = performance.now() - drawingTracker;
       this.log.cells = this.board.reduce(function (cells, column) {
         return cells + column.reduce(function (columnCells, cell) {
           return Number(!!cell) + columnCells;
         });
       }, 0);
       this.log.generation += 1;
-      this.log.fps = Math.round(1000 / (performance.now() - performanceTracker));
+      this.log.calculationTime = calculationTime;
+      this.log.drawingTime = drawingTime;
+      this.log.fps = Math.round(1000 / (calculationTime + drawingTime));
       this.log.fpsTotal += this.log.fps;
 
       if (!this.log.cells) {
@@ -32558,45 +32565,7 @@ var BriansBrainGame = /*#__PURE__*/function () {
 }();
 
 exports.BriansBrainGame = BriansBrainGame;
-},{"./calculators/naiveCalculator":"js/calculators/naiveCalculator.ts","./renderers/canvasRenderer":"js/renderers/canvasRenderer.ts","./cellState":"js/cellState.ts"}],"js/ui/log.tsx":[function(require,module,exports) {
-"use strict";
-
-function _templateObject() {
-  var data = _taggedTemplateLiteral(["\n  width: 100%;\n"]);
-
-  _templateObject = function _templateObject() {
-    return data;
-  };
-
-  return data;
-}
-
-function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
-
-var __importDefault = this && this.__importDefault || function (mod) {
-  return mod && mod.__esModule ? mod : {
-    "default": mod
-  };
-};
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Log = void 0;
-
-var react_1 = __importDefault(require("react"));
-
-var styled_components_1 = __importDefault(require("styled-components"));
-
-var Table = styled_components_1.default.table(_templateObject());
-
-function Log(_ref) {
-  var log = _ref.log;
-  return react_1.default.createElement(Table, null, react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Generation:"), react_1.default.createElement("td", null, log.generation)), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Cells:"), react_1.default.createElement("td", null, log.cells)), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Repaints:"), react_1.default.createElement("td", null, log.repaints)), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "FPS:"), react_1.default.createElement("td", null, log.fps)), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Average FPS:"), react_1.default.createElement("td", null, Math.round(log.fpsTotal / log.generation))));
-}
-
-exports.Log = Log;
-},{"react":"../node_modules/react/index.js","styled-components":"../node_modules/styled-components/dist/styled-components.browser.esm.js"}],"js/ui/common.styled.tsx":[function(require,module,exports) {
+},{"./calculators/naiveCalculator":"js/calculators/naiveCalculator.ts","./renderers/canvasRenderer":"js/renderers/canvasRenderer.ts","./cellState":"js/cellState.ts"}],"js/ui/common.styled.tsx":[function(require,module,exports) {
 "use strict";
 
 function _templateObject6() {
@@ -32752,7 +32721,7 @@ function _templateObject4() {
 }
 
 function _templateObject3() {
-  var data = _taggedTemplateLiteral(["\n  padding: 12px;\n"]);
+  var data = _taggedTemplateLiteral(["\n  padding: 0.6rem;\n"]);
 
   _templateObject3 = function _templateObject3() {
     return data;
@@ -32762,7 +32731,7 @@ function _templateObject3() {
 }
 
 function _templateObject2() {
-  var data = _taggedTemplateLiteral(["\n  padding: 8px;\n  background: ", ";\n  color: white;\n  text-align: center;\n"]);
+  var data = _taggedTemplateLiteral(["\n  padding: 0.4rem;\n  background: ", ";\n  color: ", ";\n  text-align: center;\n"]);
 
   _templateObject2 = function _templateObject2() {
     return data;
@@ -32772,7 +32741,7 @@ function _templateObject2() {
 }
 
 function _templateObject() {
-  var data = _taggedTemplateLiteral(["\n  position: fixed;\n  top: 20px;\n  right: 20px;\n"]);
+  var data = _taggedTemplateLiteral(["\n  position: fixed;\n  top: 1rem;\n  right: 1rem;\n"]);
 
   _templateObject = function _templateObject() {
     return data;
@@ -32799,11 +32768,55 @@ var styled_components_1 = __importDefault(require("styled-components"));
 exports.Sidebar = styled_components_1.default.div(_templateObject());
 exports.SectionHeader = styled_components_1.default.header(_templateObject2(), function (props) {
   return props.theme.accent;
+}, function (props) {
+  return props.theme.light;
 });
 exports.SectionBody = styled_components_1.default.div(_templateObject3());
 exports.SettingField = styled_components_1.default.div(_templateObject4());
 exports.SettingTitle = styled_components_1.default.div(_templateObject5());
-},{"styled-components":"../node_modules/styled-components/dist/styled-components.browser.esm.js"}],"js/ui/manualPainting.tsx":[function(require,module,exports) {
+},{"styled-components":"../node_modules/styled-components/dist/styled-components.browser.esm.js"}],"js/ui/log.tsx":[function(require,module,exports) {
+"use strict";
+
+function _templateObject() {
+  var data = _taggedTemplateLiteral(["\n  width: 100%;\n\n  td:nth-child(2) {\n    min-width: 3rem;\n    text-align: right;\n  }\n"]);
+
+  _templateObject = function _templateObject() {
+    return data;
+  };
+
+  return data;
+}
+
+function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
+
+var __importDefault = this && this.__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Log = void 0;
+
+var react_1 = __importDefault(require("react"));
+
+var styled_components_1 = __importDefault(require("styled-components"));
+
+var common_styled_1 = require("./common.styled");
+
+var board_styled_1 = require("./board.styled");
+
+var Table = styled_components_1.default.table(_templateObject());
+
+function Log(_ref) {
+  var log = _ref.log;
+  return react_1.default.createElement(common_styled_1.Card, null, react_1.default.createElement(board_styled_1.SectionHeader, null, "Log"), react_1.default.createElement(board_styled_1.SectionBody, null, react_1.default.createElement(Table, null, react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Generation:"), react_1.default.createElement("td", null, log.generation)), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Cells:"), react_1.default.createElement("td", null, log.cells)), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Repaints:"), react_1.default.createElement("td", null, log.repaints)), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Drawing time:"), react_1.default.createElement("td", null, log.calculationTime, "ms")), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Calculation time:"), react_1.default.createElement("td", null, log.drawingTime, "ms")), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "FPS:"), react_1.default.createElement("td", null, log.fps)), react_1.default.createElement("tr", null, react_1.default.createElement("td", null, "Average FPS:"), react_1.default.createElement("td", null, Math.round(log.fpsTotal / log.generation))))));
+}
+
+exports.Log = Log;
+},{"react":"../node_modules/react/index.js","styled-components":"../node_modules/styled-components/dist/styled-components.browser.esm.js","./common.styled":"js/ui/common.styled.tsx","./board.styled":"js/ui/board.styled.tsx"}],"js/ui/manualPainting.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importDefault = this && this.__importDefault || function (mod) {
@@ -33096,9 +33109,9 @@ function BriansBrainGameBoard(_ref) {
     }
   }, "Borders"), react_1.default.createElement(common_styled_1.Button, {
     type: "submit"
-  }, "Apply")))), !!log && !!log.generation && react_1.default.createElement(common_styled_1.Card, null, react_1.default.createElement(board_styled_1.SectionHeader, null, "Log"), react_1.default.createElement(board_styled_1.SectionBody, null, react_1.default.createElement(log_1.Log, {
+  }, "Apply")))), !!log && !!log.generation && react_1.default.createElement(log_1.Log, {
     log: log
-  })))));
+  })));
 }
 
 exports.BriansBrainGameBoard = BriansBrainGameBoard;
@@ -33125,8 +33138,8 @@ var board_1 = require("./js/ui/board");
 
 react_dom_1.render(react_1.default.createElement(styled_components_1.ThemeProvider, {
   theme: {
-    accent: 'rgba(108, 86, 123, 0.8)',
-    main: 'rgba(228, 214, 207, 0.6)',
+    accent: 'rgba(108, 86, 123, 0.9)',
+    main: 'rgba(228, 214, 207, 0.8)',
     background: '#ddd',
     light: '#eee',
     dark: '#333',
@@ -33136,7 +33149,7 @@ react_dom_1.render(react_1.default.createElement(styled_components_1.ThemeProvid
 }, react_1.default.createElement(board_1.BriansBrainGameBoard, {
   horizontalSize: 300,
   verticalSize: 200,
-  cellSize: 5,
+  cellSize: 3,
   borderSize: 0,
   logPrintDelay: 250,
   colors: ['white', 'pink', 'firebrick', 'gray']
@@ -33169,7 +33182,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "13329" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "2822" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
